@@ -1,10 +1,7 @@
-#!/usr/bin/env nub
 import { createHash } from "node:crypto";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import process from "node:process";
-import { fileURLToPath } from "node:url";
-import { parseArgs, type RecoverOptions } from "./args.ts";
+import type { RecoverOptions } from "./args.ts";
 import { resourcePath, restoredSourcePath, safe } from "./paths.ts";
 
 type Report = {
@@ -108,7 +105,7 @@ function evalSources(text: string): { source: string; content: string }[] {
 
 export function recoverUsage(): void {
   console.log(
-    "用法: nub src/cli.ts recover <站点资源目录>\n输出目录由 OUTPUT_DIR 控制，默认 ./output",
+    "用法: source-rewind recover <站点资源目录>\n输出目录由 OUTPUT_DIR 控制，默认 ./output",
   );
 }
 
@@ -236,19 +233,4 @@ export async function recover(options: RecoverOptions): Promise<void> {
     `完成：Source Map 源码 ${report.maps.restored} 个（下载 Map ${report.maps.downloaded}，复用缓存 ${report.maps.reusedFromCache}），Webpack eval ${report.webpackEval.restored} 个。`,
   );
   console.log(`输出：${path.join(outputDir, "restored")}`);
-}
-
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  try {
-    const parsed = parseArgs(["recover", ...process.argv.slice(2)]);
-    const task =
-      parsed.action === "recover" && !parsed.help ? recover(parsed.options) : recoverUsage();
-    Promise.resolve(task).catch((error) => {
-      console.error(`错误：${error instanceof Error ? error.message : String(error)}`);
-      process.exitCode = 1;
-    });
-  } catch (error) {
-    console.error(`错误：${error instanceof Error ? error.message : String(error)}`);
-    process.exitCode = 1;
-  }
 }

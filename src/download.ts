@@ -1,15 +1,13 @@
-#!/usr/bin/env nub
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
-import { fileURLToPath } from "node:url";
 import puppeteer, { type Browser, type HTTPResponse, type Page } from "puppeteer-core";
-import { parseArgs, type DownloadOptions } from "./args.ts";
+import type { DownloadOptions } from "./args.ts";
 import { resourcePath } from "./paths.ts";
 
 export function downloadUsage(): void {
   console.log(`用法:
-  nub src/cli.ts download [初始URL] --browser <Chrome路径或远程URL>
+  source-rewind download [初始URL] --browser <Chrome路径或远程URL>
 
 选项:
   --browser <值>     Chrome 可执行文件路径、远程 HTTP 调试地址或 WebSocket endpoint
@@ -157,21 +155,4 @@ export async function download(options: DownloadOptions): Promise<void> {
   if (launched && browser.connected) await browser.close();
   else if (browser.connected) browser.disconnect();
   console.log(`已保存 ${report.downloaded.length} 个资源：${outputDir}`);
-}
-
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  try {
-    const parsed = parseArgs(["download", ...process.argv.slice(2)]);
-    const task =
-      parsed.action === "download" && !parsed.help ? download(parsed.options) : downloadUsage();
-    Promise.resolve(task).catch((error) => {
-      console.error(`错误：${error instanceof Error ? error.message : String(error)}`);
-      downloadUsage();
-      process.exitCode = 1;
-    });
-  } catch (error) {
-    console.error(`错误：${error instanceof Error ? error.message : String(error)}`);
-    downloadUsage();
-    process.exitCode = 1;
-  }
 }

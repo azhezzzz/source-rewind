@@ -1,0 +1,6 @@
+{
+  "main": "dist/source-rewind.cjs",
+  "output": "dist/source-rewind",
+  "disableExperimentalSEAWarning": true,
+  "useCodeCache": true
+}

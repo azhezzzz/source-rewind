@@ -119,6 +119,16 @@ output/
 - Webpack eval 恢复的是 bundle 中嵌入的模块内容，可能仍包含 `__webpack_require__` 等编译产物。
 - 恢复器会执行路径安全检查、内容去重和冲突记录，但恢复结果不保证能够直接重新构建。
 
+## 构建 SEA 可执行文件
+
+使用 Node 25.5 或更高版本为本机平台生成无需另行安装 Node 的可执行文件：
+
+```bash
+nub run build:sea
+```
+
+产物位于 `dist/source-rewind`，Windows 下为 `dist/source-rewind.exe`。构建脚本会先打包 CLI，再通过 Node 原生 `--build-sea` 生成可执行文件。不同操作系统和 CPU 架构需要分别构建；Chrome 不会包含在产物中，运行下载行动时仍需通过 `--browser` 或 `PUPPETEER_BROWSER` 指定。
+
 ## 发布
 
 项目使用 [release-it](https://github.com/release-it/release-it/releases) 和 Conventional Commits 自动计算版本、生成 `CHANGELOG.md`、创建 Git 标签及 GitHub Release。

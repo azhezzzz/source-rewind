@@ -9,5 +9,5 @@
     "builtin": true,
     "node": true
   },
-  "ignorePatterns": ["output/**"]
+  "ignorePatterns": ["dist/**", "node_modules/**", "output/**"]
 }

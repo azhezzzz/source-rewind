@@ -8,13 +8,13 @@ function usage(): void {
   console.log(`SourceRewind：浏览器资源采集与前端源码回溯工具
 
 用法:
-  nub src/cli.ts <行动> [参数]
+  source-rewind <行动> [参数]
 
 行动:
   download [初始URL]       下载浏览器运行时加载的资源
   recover <站点资源目录>  从已下载资源恢复源码
 
-运行 \`nub src/cli.ts <行动> --help\` 查看行动帮助。`);
+运行 \`source-rewind <行动> --help\` 查看行动帮助。`);
 }
 
 async function main(args: string[]): Promise<void> {
