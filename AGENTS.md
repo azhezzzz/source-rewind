@@ -1,5 +1,9 @@
 # Repository guidelines
 
+## Committing changes
+
+- Only commit changes when the user explicitly asks for a commit. Never create a commit proactively.
+
 ## Commit messages
 
 Use Conventional Commits for every commit:
