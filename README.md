@@ -94,7 +94,7 @@ OUTPUT_DIR=./recovered nub src/cli.ts recover ./output/resources/static1.kqiu.cn
 2. 内嵌 `sourceMappingURL=data:application/json;base64,...`
 3. Webpack `eval("... //# sourceURL=webpack:///...")`
 
-恢复完成后，程序会通过 `oxfmt` 官方 Node API 在当前进程内统一格式化本次写出的 JS、TypeScript、CSS、HTML、JSON 等源码。格式化失败不会删除恢复内容，详情会记录在 `recovery-report.json`。
+恢复内容会按 Source Map 或 Webpack bundle 中记录的原始内容写入，不会额外格式化。
 
 外部 Source Map 会缓存到 `OUTPUT_DIR/resources/<host>/...`。再次执行时优先读取缓存，只有本地不存在才按 bundle URL 下载。需要特殊登录请求头的 `.map` 可能无法获取，失败原因会写入报告。
 

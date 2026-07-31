@@ -4,26 +4,8 @@ import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
-import { format } from "oxfmt";
 import { parseArgs, type RecoverOptions } from "./args.ts";
 import { resourcePath, restoredSourcePath, safe } from "./paths.ts";
-
-const formatExtensions = new Set([
-  ".js",
-  ".jsx",
-  ".mjs",
-  ".cjs",
-  ".ts",
-  ".tsx",
-  ".mts",
-  ".cts",
-  ".json",
-  ".css",
-  ".scss",
-  ".less",
-  ".html",
-  ".vue",
-]);
 
 type Report = {
   scanned: number;
@@ -36,7 +18,6 @@ type Report = {
     missingContent: number;
   };
   webpackEval: { found: number; restored: number; failures: object[] };
-  formatting: { attempted: number; formatted: number; failures: object[] };
   conflicts: string[];
 };
 
@@ -147,11 +128,9 @@ export async function recover(options: RecoverOptions): Promise<void> {
       missingContent: 0,
     },
     webpackEval: { found: 0, restored: 0, failures: [] },
-    formatting: { attempted: 0, formatted: 0, failures: [] },
     conflicts: [],
   };
   const written = new Map<string, string>();
-  const formatFiles: string[] = [];
   const writeSource = async (
     kind: string,
     host: string,
@@ -168,7 +147,6 @@ export async function recover(options: RecoverOptions): Promise<void> {
     const target = path.join(outputDir, targetRelative);
     await mkdir(path.dirname(target), { recursive: true });
     await writeFile(target, content);
-    if (formatExtensions.has(path.extname(target).toLowerCase())) formatFiles.push(target);
   };
 
   for (const [index, file] of files.entries()) {
@@ -242,25 +220,6 @@ export async function recover(options: RecoverOptions): Promise<void> {
     console.log(`[${index + 1}/${files.length}] ${relative}`);
   }
 
-  report.formatting.attempted = formatFiles.length;
-  await Promise.all(
-    formatFiles.map(async (file) => {
-      const relative = path.relative(outputDir, file).replaceAll(path.sep, "/");
-      try {
-        const sourceText = await readFile(file, "utf8");
-        const result = await format(file, sourceText);
-        await writeFile(file, result.code);
-        if (result.errors.length) {
-          report.formatting.failures.push({ file: relative, errors: result.errors });
-        } else report.formatting.formatted++;
-      } catch (error) {
-        report.formatting.failures.push({
-          file: relative,
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
-    }),
-  );
   await mkdir(outputDir, { recursive: true });
   await writeFile(
     path.join(outputDir, "recovery-report.json"),
@@ -270,8 +229,11 @@ export async function recover(options: RecoverOptions): Promise<void> {
       2,
     ),
   );
+  if (report.maps.found === 0 && report.webpackEval.found === 0) {
+    console.warn("\n未检测到可恢复的 Source Map 或 Webpack eval 源码。");
+  }
   console.log(
-    `\n完成：Source Map 源码 ${report.maps.restored} 个（下载 Map ${report.maps.downloaded}，复用缓存 ${report.maps.reusedFromCache}），Webpack eval ${report.webpackEval.restored} 个，格式化 ${report.formatting.formatted}/${report.formatting.attempted} 个。`,
+    `完成：Source Map 源码 ${report.maps.restored} 个（下载 Map ${report.maps.downloaded}，复用缓存 ${report.maps.reusedFromCache}），Webpack eval ${report.webpackEval.restored} 个。`,
   );
   console.log(`输出：${path.join(outputDir, "restored")}`);
 }
