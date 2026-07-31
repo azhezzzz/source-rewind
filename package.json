@@ -1,0 +1,49 @@
+{
+  "name": "source-rewind",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "download": "nub src/download.ts",
+    "recover": "nub src/recover.ts",
+    "check": "tsc --noEmit",
+    "lint": "oxlint .",
+    "lint:fix": "oxlint . --fix",
+    "lint:staged": "lint-staged",
+    "validate": "nub run check && nub run lint",
+    "release": "release-it",
+    "release:dry": "release-it --dry-run",
+    "prepare": "simple-git-hooks"
+  },
+  "dependencies": {
+    "puppeteer-core": "^25.4.0"
+  },
+  "devDependencies": {
+    "@nubjs/types": ">=0.4.13 <=0.6.0",
+    "@release-it/conventional-changelog": "^12.0.0",
+    "@types/node": "^26",
+    "lint-staged": "^17.2.0",
+    "oxfmt": "^0.61.0",
+    "oxlint": "^1.76.0",
+    "release-it": "^21.0.0",
+    "simple-git-hooks": "^2.13.1",
+    "typescript": "^7"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "nub run lint:staged"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "oxlint --fix",
+      "oxfmt --write"
+    ],
+    "*.{json,jsonc,yaml,yml,md,css,scss,html}": "oxfmt --write"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "nub",
+      "version": "^0.6.0",
+      "onFail": "warn"
+    }
+  },
+  "packageManager": "nub@0.6.0"
+}
