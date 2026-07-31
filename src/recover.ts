@@ -3,7 +3,9 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
+import { fileURLToPath } from "node:url";
 import { format } from "oxfmt";
+import { parseArgs, type RecoverOptions } from "./args.ts";
 import { resourcePath, restoredSourcePath, safe } from "./paths.ts";
 
 const formatExtensions = new Set([
@@ -123,18 +125,15 @@ function evalSources(text: string): { source: string; content: string }[] {
   return result;
 }
 
-async function main(): Promise<void> {
-  const input = process.argv[2];
-  if (input === "-h" || input === "--help") {
-    console.log(
-      "用法: nub src/recover.ts <站点资源目录>\n输出目录由 OUTPUT_DIR 控制，默认 ./output",
-    );
-    return;
-  }
-  if (!input) throw new Error("必须指定站点资源目录\n用法: nub src/recover.ts <站点资源目录>");
-  if (process.argv.length > 3) throw new Error("只接受一个站点资源目录");
-  const siteDir = path.resolve(input);
-  const outputDir = path.resolve(process.env.OUTPUT_DIR || "output");
+export function recoverUsage(): void {
+  console.log(
+    "用法: nub src/cli.ts recover <站点资源目录>\n输出目录由 OUTPUT_DIR 控制，默认 ./output",
+  );
+}
+
+export async function recover(options: RecoverOptions): Promise<void> {
+  const siteDir = path.resolve(options.siteDir);
+  const outputDir = path.resolve(options.outputDir);
   const host = path.basename(siteDir);
   const files = (await walk(siteDir)).filter((file) => /\.(?:js|mjs|cjs|css)$/i.test(file));
   const report: Report = {
@@ -277,7 +276,17 @@ async function main(): Promise<void> {
   console.log(`输出：${path.join(outputDir, "restored")}`);
 }
 
-main().catch((error) => {
-  console.error(`错误：${error instanceof Error ? error.message : String(error)}`);
-  process.exitCode = 1;
-});
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  try {
+    const parsed = parseArgs(["recover", ...process.argv.slice(2)]);
+    const task =
+      parsed.action === "recover" && !parsed.help ? recover(parsed.options) : recoverUsage();
+    Promise.resolve(task).catch((error) => {
+      console.error(`错误：${error instanceof Error ? error.message : String(error)}`);
+      process.exitCode = 1;
+    });
+  } catch (error) {
+    console.error(`错误：${error instanceof Error ? error.message : String(error)}`);
+    process.exitCode = 1;
+  }
+}

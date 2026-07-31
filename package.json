@@ -3,8 +3,9 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "download": "nub src/download.ts",
-    "recover": "nub src/recover.ts",
+    "cli": "nub src/cli.ts",
+    "download": "nub src/cli.ts download",
+    "recover": "nub src/cli.ts recover",
     "check": "tsc --noEmit",
     "lint": "oxlint .",
     "lint:fix": "oxlint . --fix",

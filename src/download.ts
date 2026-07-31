@@ -2,46 +2,57 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
+import { fileURLToPath } from "node:url";
 import puppeteer, { type Browser, type HTTPResponse, type Page } from "puppeteer-core";
+import { parseArgs, type DownloadOptions } from "./args.ts";
 import { resourcePath } from "./paths.ts";
 
-function usage(): void {
+export function downloadUsage(): void {
   console.log(`用法:
-  PUPPETEER_BROWSER=/path/to/chrome nub src/download.ts [初始URL]
-  PUPPETEER_BROWSER=http://127.0.0.1:9222 nub src/download.ts [初始URL]
+  nub src/cli.ts download [初始URL] --browser <Chrome路径或远程URL>
+
+选项:
+  --browser <值>     Chrome 可执行文件路径、远程 HTTP 调试地址或 WebSocket endpoint
 
 环境变量:
-  PUPPETEER_BROWSER  Chrome 路径、远程 HTTP 调试地址或 WebSocket endpoint（必填）
+  PUPPETEER_BROWSER  --browser 未提供时使用
   OUTPUT_DIR         工作目录（默认 ./output）
   HEADLESS           本地启动是否无界面，默认 false
 `);
 }
 
-async function openBrowser(value: string): Promise<{ browser: Browser; launched: boolean }> {
+async function openBrowser(
+  value: string,
+  headless: boolean,
+): Promise<{ browser: Browser; launched: boolean }> {
   if (/^wss?:\/\//i.test(value))
     return { browser: await puppeteer.connect({ browserWSEndpoint: value }), launched: false };
-  if (/^https?:\/\//i.test(value))
-    return { browser: await puppeteer.connect({ browserURL: value }), launched: false };
+  if (/^https?:\/\//i.test(value)) {
+    const response = await fetch(value);
+    if (!response.ok) throw new Error(`无法读取远程浏览器信息：HTTP ${response.status}`);
+    const info = (await response.json()) as { webSocketDebuggerUrl?: unknown };
+    if (typeof info.webSocketDebuggerUrl !== "string")
+      throw new Error("远程浏览器信息缺少 webSocketDebuggerUrl");
+    return {
+      browser: await puppeteer.connect({ browserWSEndpoint: info.webSocketDebuggerUrl }),
+      launched: false,
+    };
+  }
   return {
     browser: await puppeteer.launch({
       executablePath: path.resolve(value),
-      headless: /^(1|true|yes)$/i.test(process.env.HEADLESS || "false"),
+      headless,
       defaultViewport: null,
     }),
     launched: true,
   };
 }
 
-async function main(): Promise<void> {
-  const input = process.argv[2];
-  if (input === "-h" || input === "--help") return usage();
-  if (process.argv.length > 3) throw new Error("只接受一个可选的初始 URL");
-  const entryUrl = input ? new URL(input) : null;
+export async function download(options: DownloadOptions): Promise<void> {
+  const entryUrl = options.url ? new URL(options.url) : null;
   if (entryUrl && !/^https?:$/.test(entryUrl.protocol))
     throw new Error("初始 URL 只支持 http/https");
-  const endpoint = process.env.PUPPETEER_BROWSER;
-  if (!endpoint) throw new Error("请设置 PUPPETEER_BROWSER");
-  const outputDir = path.resolve(process.env.OUTPUT_DIR || "output");
+  const outputDir = path.resolve(options.outputDir);
   await mkdir(outputDir, { recursive: true });
 
   const report = {
@@ -55,7 +66,7 @@ async function main(): Promise<void> {
   const saved = new Set<string>();
   const pending = new Set<Promise<void>>();
   const attached = new WeakSet<Page>();
-  const { browser, launched } = await openBrowser(endpoint);
+  const { browser, launched } = await openBrowser(options.browser, options.headless);
 
   const track = (promise: Promise<void>): void => {
     pending.add(promise);
@@ -148,8 +159,19 @@ async function main(): Promise<void> {
   console.log(`已保存 ${report.downloaded.length} 个资源：${outputDir}`);
 }
 
-main().catch((error) => {
-  console.error(`错误：${error instanceof Error ? error.message : String(error)}`);
-  usage();
-  process.exitCode = 1;
-});
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  try {
+    const parsed = parseArgs(["download", ...process.argv.slice(2)]);
+    const task =
+      parsed.action === "download" && !parsed.help ? download(parsed.options) : downloadUsage();
+    Promise.resolve(task).catch((error) => {
+      console.error(`错误：${error instanceof Error ? error.message : String(error)}`);
+      downloadUsage();
+      process.exitCode = 1;
+    });
+  } catch (error) {
+    console.error(`错误：${error instanceof Error ? error.message : String(error)}`);
+    downloadUsage();
+    process.exitCode = 1;
+  }
+}
