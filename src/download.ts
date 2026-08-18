@@ -26,7 +26,11 @@ async function openBrowser(
   if (/^wss?:\/\//i.test(value))
     return { browser: await puppeteer.connect({ browserWSEndpoint: value }), launched: false };
   if (/^https?:\/\//i.test(value)) {
-    const response = await fetch(value);
+    const versionUrl = new URL(value);
+    if (!versionUrl.pathname.includes("/json/version")) {
+      versionUrl.pathname = `${versionUrl.pathname.replace(/\/$/, "")}/json/version`;
+    }
+    const response = await fetch(versionUrl);
     if (!response.ok) throw new Error(`无法读取远程浏览器信息：HTTP ${response.status}`);
     const info = (await response.json()) as { webSocketDebuggerUrl?: unknown };
     if (typeof info.webSocketDebuggerUrl !== "string")

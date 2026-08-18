@@ -49,13 +49,14 @@ PUPPETEER_BROWSER='/path/to/chrome' \
 nub src/cli.ts download https://example.com/
 ```
 
-连接远程调试浏览器时，HTTP 地址需要返回包含 `webSocketDebuggerUrl` 的 JSON：
+连接远程调试浏览器时，可以直接提供调试服务的 HTTP 地址，程序会自动请求其
+`/json/version` 并读取 `webSocketDebuggerUrl`：
 
 ```bash
-PUPPETEER_BROWSER=http://127.0.0.1:9222/json/version nub src/cli.ts download
+PUPPETEER_BROWSER=http://127.0.0.1:9222 nub src/cli.ts download
 ```
 
-也支持完整的版本信息 URL 和 WebSocket endpoint：
+也支持已包含 `/json/version` 的完整版本信息 URL 和 WebSocket endpoint：
 
 ```bash
 nub src/cli.ts download --browser http://192.168.0.3:9223/json/version
