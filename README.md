@@ -23,9 +23,23 @@ nub install
 nub src/cli.ts
 ```
 
-需要 Node.js 20.19 或更高版本以及 `nub`。项目使用 `puppeteer-core`，安装依赖时不会下载 Chrome。请准备本地 Chrome/Chromium，或者可访问的远程 Chrome DevTools endpoint。
+需要 Node.js 20.19 或更高版本以及 `nub`。项目支持 CloakBrowser、本地 Chrome/Chromium，或者可访问的远程 Chrome DevTools endpoint。安装项目依赖时不会下载浏览器；CloakBrowser 会在首次使用时下载自己的 Chromium。
 
 ## 一、下载浏览器资源
+
+使用有头 CloakBrowser（默认 `HEADLESS=false`，同时启用人类化交互）：
+
+```bash
+nub src/cli.ts download --browser cloak
+```
+
+也可以通过环境变量选择：
+
+```bash
+PUPPETEER_BROWSER=cloak nub src/cli.ts download https://example.com/
+```
+
+CloakBrowser 首次启动会自动下载浏览器；最新免费版本可按其提示通过 GitHub 登录。后续启动复用本机缓存。
 
 使用本地 Chrome：
 
@@ -40,7 +54,7 @@ nub src/cli.ts download
 nub src/cli.ts download --browser '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
 ```
 
-浏览器打开后，在地址栏访问站点并正常操作。路由懒加载、动态 import、点击或跳转产生的前端资源会在收到响应时立即写入磁盘。采集会持续运行，关闭采集标签页或按 `Ctrl+C` 才会结束并生成 `download-report.json`。
+浏览器打开后会显示采集引导页。默认只采集程序创建的主标签页；设置 `CAPTURE_NEW_TABS=true` 后，当前浏览器实例在采集期间手动新建或由网页打开的标签页也会自动采集。路由懒加载、动态 import、点击或跳转产生的前端资源会在收到响应时立即写入磁盘。采集会持续运行，关闭初始采集标签页或按 `Ctrl+C` 才会结束并生成 `download-report.json`。
 
 也可以提供初始 URL：
 
@@ -67,11 +81,12 @@ nub src/cli.ts download --browser ws://192.168.0.3:9223/devtools/browser/xxx
 
 下载器环境变量：
 
-| 变量                | 必填 | 说明                                                      |
-| ------------------- | ---- | --------------------------------------------------------- |
-| `PUPPETEER_BROWSER` | 是   | Chrome 可执行文件路径、HTTP 调试地址或 WebSocket endpoint |
-| `OUTPUT_DIR`        | 否   | 工作目录，默认 `./output`                                 |
-| `HEADLESS`          | 否   | 本地启动时是否无界面，默认 `false`                        |
+| 变量                | 必填 | 说明                                                               |
+| ------------------- | ---- | ------------------------------------------------------------------ |
+| `PUPPETEER_BROWSER` | 是   | `cloak`、Chrome 可执行文件路径、HTTP 调试地址或 WebSocket endpoint |
+| `OUTPUT_DIR`        | 否   | 工作目录，默认 `./output`                                          |
+| `HEADLESS`          | 否   | 本地启动时是否无界面，默认 `false`                                 |
+| `CAPTURE_NEW_TABS`  | 否   | 是否采集当前浏览器实例在连接后新建的其他标签页，默认 `false`       |
 
 ## 二、恢复源码
 

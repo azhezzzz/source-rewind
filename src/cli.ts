@@ -1,6 +1,7 @@
 #!/usr/bin/env nub
 import process from "node:process";
 import { parseArgs } from "./args.ts";
+import { environmentHelp } from "./config.ts";
 import { download, downloadUsage } from "./download.ts";
 import { recover, recoverUsage } from "./recover.ts";
 
@@ -13,6 +14,9 @@ function usage(): void {
 行动:
   download [初始URL]       下载浏览器运行时加载的资源
   recover <站点资源目录>  从已下载资源恢复源码
+
+环境变量:
+${environmentHelp()}
 
 运行 \`source-rewind <行动> --help\` 查看行动帮助。`);
 }

@@ -1,7 +1,9 @@
 import process from "node:process";
+import { readConfig } from "./config.ts";
 
 export type DownloadOptions = {
   browser: string;
+  captureNewTabs: boolean;
   headless: boolean;
   outputDir: string;
   url: string | null;
@@ -28,6 +30,7 @@ function optionValue(parameters: string[], index: number, name: string): [string
 }
 
 export function parseArgs(args: string[], environment: NodeJS.ProcessEnv = process.env): CliArgs {
+  const config = readConfig(environment);
   const [action, ...parameters] = args;
 
   if (!action || action === "-h" || action === "--help" || action === "help") {
@@ -51,15 +54,17 @@ export function parseArgs(args: string[], environment: NodeJS.ProcessEnv = proce
     if (help && (positionals.length || browser)) throw new Error("帮助选项不接受其他参数");
     if (help) return { action, help: true };
     if (positionals.length > 1) throw new Error("download 只接受一个可选的初始 URL");
-    const resolvedBrowser = browser ?? environment.PUPPETEER_BROWSER;
-    if (!resolvedBrowser) throw new Error("请通过 --browser 或 PUPPETEER_BROWSER 指定浏览器");
+    const resolvedBrowser = browser ?? config.browser;
+    if (!resolvedBrowser)
+      throw new Error("请通过 --browser 或 PUPPETEER_BROWSER 指定 cloak、浏览器路径或远程地址");
     return {
       action,
       help: false,
       options: {
         browser: resolvedBrowser,
-        headless: /^(1|true|yes)$/i.test(environment.HEADLESS || "false"),
-        outputDir: environment.OUTPUT_DIR || "output",
+        captureNewTabs: config.captureNewTabs,
+        headless: config.headless,
+        outputDir: config.outputDir,
         url: positionals[0] ?? null,
       },
     };
@@ -74,7 +79,7 @@ export function parseArgs(args: string[], environment: NodeJS.ProcessEnv = proce
     return {
       action,
       help: false,
-      options: { outputDir: environment.OUTPUT_DIR || "output", siteDir: parameters[0] },
+      options: { outputDir: config.outputDir, siteDir: parameters[0] },
     };
   }
 

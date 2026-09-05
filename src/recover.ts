@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { RecoverOptions } from "./args.ts";
+import { environmentHelp } from "./config.ts";
 import { resourcePath, restoredSourcePath, safe } from "./paths.ts";
 
 type Report = {
@@ -104,9 +105,10 @@ function evalSources(text: string): { source: string; content: string }[] {
 }
 
 export function recoverUsage(): void {
-  console.log(
-    "用法: source-rewind recover <站点资源目录>\n输出目录由 OUTPUT_DIR 控制，默认 ./output",
-  );
+  console.log(`用法: source-rewind recover <站点资源目录>
+
+环境变量:
+${environmentHelp()}`);
 }
 
 export async function recover(options: RecoverOptions): Promise<void> {
