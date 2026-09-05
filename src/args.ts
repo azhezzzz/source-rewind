@@ -56,7 +56,7 @@ export function parseArgs(args: string[], environment: NodeJS.ProcessEnv = proce
     if (positionals.length > 1) throw new Error("download 只接受一个可选的初始 URL");
     const resolvedBrowser = browser ?? config.browser;
     if (!resolvedBrowser)
-      throw new Error("请通过 --browser 或 PUPPETEER_BROWSER 指定 cloak、浏览器路径或远程地址");
+      throw new Error("请通过 --browser 或 PUPPETEER_BROWSER 指定浏览器路径或远程地址");
     return {
       action,
       help: false,

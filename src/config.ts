@@ -1,6 +1,6 @@
 export const environmentVariables = {
   PUPPETEER_BROWSER: {
-    description: "cloak、Chrome 可执行文件路径、HTTP 调试地址或 WebSocket endpoint",
+    description: "Chrome 可执行文件路径、HTTP 调试地址或 WebSocket endpoint",
     defaultValue: null,
   },
   OUTPUT_DIR: {

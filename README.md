@@ -4,7 +4,7 @@
 
 使用真实 Chrome 捕获现代前端页面运行时加载的资源，再从 Source Map 或 Webpack eval bundle 中恢复可读源码。工具通过 `src/cli.ts` 提供两个行动：
 
-- `download`：通过 Puppeteer 记录浏览器实际加载的前端资源。
+- `download`：通过 `chrome-remote-interface` 使用 Chrome DevTools Protocol 记录浏览器实际加载的前端资源。
 - `recover`：扫描已下载资源，识别并恢复标准 Source Map 和 Webpack eval 源码。
 
 下载和恢复可以分开运行；浏览器仍在采集时，也可以在另一个终端恢复已经落盘的文件。API 请求（XHR、Fetch 等）和普通 JSON 响应不会保存，Source Map 文件不受 JSON 过滤影响。
@@ -23,23 +23,9 @@ nub install
 nub src/cli.ts
 ```
 
-需要 Node.js 20.19 或更高版本以及 `nub`。项目支持 CloakBrowser、本地 Chrome/Chromium，或者可访问的远程 Chrome DevTools endpoint。安装项目依赖时不会下载浏览器；CloakBrowser 会在首次使用时下载自己的 Chromium。
+需要 Node.js 20.19 或更高版本以及 `nub`。项目支持本地 Chrome/Chromium，或者可访问的远程 Chrome DevTools endpoint。安装项目依赖时不会下载浏览器。
 
 ## 一、下载浏览器资源
-
-使用有头 CloakBrowser（默认 `HEADLESS=false`，同时启用人类化交互）：
-
-```bash
-nub src/cli.ts download --browser cloak
-```
-
-也可以通过环境变量选择：
-
-```bash
-PUPPETEER_BROWSER=cloak nub src/cli.ts download https://example.com/
-```
-
-CloakBrowser 首次启动会自动下载浏览器；最新免费版本可按其提示通过 GitHub 登录。后续启动复用本机缓存。
 
 使用本地 Chrome：
 
@@ -53,6 +39,8 @@ nub src/cli.ts download
 ```bash
 nub src/cli.ts download --browser '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
 ```
+
+本地启动 Chrome 时，临时浏览器配置位于 `OUTPUT_DIR/profile/session-*`。采集正常结束或启动失败后会删除对应的 `session-*` 目录；远程浏览器模式不会创建 profile。
 
 浏览器打开后会显示采集引导页。默认只采集程序创建的主标签页；设置 `CAPTURE_NEW_TABS=true` 后，当前浏览器实例在采集期间手动新建或由网页打开的标签页也会自动采集。路由懒加载、动态 import、点击或跳转产生的前端资源会在收到响应时立即写入磁盘。采集会持续运行，关闭初始采集标签页或按 `Ctrl+C` 才会结束并生成 `download-report.json`。
 
@@ -81,12 +69,12 @@ nub src/cli.ts download --browser ws://192.168.0.3:9223/devtools/browser/xxx
 
 下载器环境变量：
 
-| 变量                | 必填 | 说明                                                               |
-| ------------------- | ---- | ------------------------------------------------------------------ |
-| `PUPPETEER_BROWSER` | 是   | `cloak`、Chrome 可执行文件路径、HTTP 调试地址或 WebSocket endpoint |
-| `OUTPUT_DIR`        | 否   | 工作目录，默认 `./output`                                          |
-| `HEADLESS`          | 否   | 本地启动时是否无界面，默认 `false`                                 |
-| `CAPTURE_NEW_TABS`  | 否   | 是否采集当前浏览器实例在连接后新建的其他标签页，默认 `false`       |
+| 变量                | 必填 | 说明                                                         |
+| ------------------- | ---- | ------------------------------------------------------------ |
+| `PUPPETEER_BROWSER` | 是   | Chrome 可执行文件路径、HTTP 调试地址或 WebSocket endpoint    |
+| `OUTPUT_DIR`        | 否   | 工作目录，默认 `./output`                                    |
+| `HEADLESS`          | 否   | 本地启动时是否无界面，默认 `false`                           |
+| `CAPTURE_NEW_TABS`  | 否   | 是否采集当前浏览器实例在连接后新建的其他标签页，默认 `false` |
 
 ## 二、恢复源码
 
