@@ -4,7 +4,7 @@
 
 使用真实 Chrome 捕获现代前端页面运行时加载的资源，再从 Source Map 或 Webpack eval bundle 中恢复可读源码。工具通过 `src/cli.ts` 提供两个行动：
 
-- `download`：通过 `chrome-remote-interface` 使用 Chrome DevTools Protocol 记录浏览器实际加载的前端资源。
+- `download`：通过 Chrome DevTools Protocol 记录浏览器实际加载的前端资源。
 - `recover`：扫描已下载资源，识别并恢复标准 Source Map 和 Webpack eval 源码。
 
 下载和恢复可以分开运行；浏览器仍在采集时，也可以在另一个终端恢复已经落盘的文件。API 请求（XHR、Fetch 等）和普通 JSON 响应不会保存，Source Map 文件不受 JSON 过滤影响。
@@ -23,7 +23,7 @@ nub install
 nub src/cli.ts
 ```
 
-需要 Node.js 20.19 或更高版本以及 `nub`。项目支持本地 Chrome/Chromium，或者可访问的远程 Chrome DevTools endpoint。安装项目依赖时不会下载浏览器。
+需要 Node.js 22.4 或更高版本以及 `nub`。项目支持本地 Chrome/Chromium，或者可访问的远程 Chrome DevTools endpoint。安装项目依赖时不会下载浏览器。
 
 ## 一、下载浏览器资源
 
@@ -132,6 +132,12 @@ nub run build:sea
 ```
 
 产物位于 `dist/source-rewind`，Windows 下为 `dist/source-rewind.exe`。构建脚本会先打包 CLI，再通过 Node 原生 `--build-sea` 生成可执行文件。不同操作系统和 CPU 架构需要分别构建；Chrome 不会包含在产物中，运行下载行动时仍需通过 `--browser` 或 `PUPPETEER_BROWSER` 指定。
+
+开发时可以用诊断脚本启动一个使用临时 profile 的本地无界面 Chrome，检查原生 WebSocket CDP 客户端能否建立连接、发送基础命令并正常关闭。该脚本不执行资源采集，也不替代完整下载流程的测试：
+
+```bash
+nub run smoke:cdp '/path/to/chrome'
+```
 
 ## 发布
 

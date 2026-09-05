@@ -19,7 +19,7 @@ await build({
   format: "cjs",
   outfile: bundlePath,
   platform: "node",
-  target: "node20",
+  target: "node22",
 });
 
 const seaConfig = JSON.parse(await readFile(path.join(rootDir, "sea-config.json"), "utf8"));

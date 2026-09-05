@@ -1,11 +1,11 @@
 import { spawn, type ChildProcess } from "node:child_process";
-import { once } from "node:events";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
-import CDP from "chrome-remote-interface";
 import type { Protocol } from "devtools-protocol";
 import type { DownloadOptions } from "./args.ts";
+import { terminateBrowserProcess } from "./browser-process.ts";
+import { CdpClient } from "./cdp-client.ts";
 import { environmentHelp } from "./config.ts";
 import { resourcePath } from "./paths.ts";
 
@@ -119,9 +119,10 @@ async function launchBrowser(
       browserError,
     ]);
   } catch (error) {
-    if (browserProcess.exitCode === null && browserProcess.signalCode === null) {
-      browserProcess.kill();
-      await Promise.race([once(browserProcess, "exit"), delay(2_000)]);
+    try {
+      await terminateBrowserProcess(browserProcess);
+    } catch (terminationError) {
+      throw new AggregateError([error, terminationError], "浏览器启动失败且无法清理进程");
     }
     await rm(profileDir, { recursive: true, force: true });
     throw error;
@@ -130,17 +131,12 @@ async function launchBrowser(
 
 async function closeLaunchedBrowser(
   browser: LaunchedBrowser,
-  cdp: CDP.Client | null,
+  cdp: CdpClient | null,
 ): Promise<void> {
-  if (browser.process.exitCode === null && browser.process.signalCode === null) {
-    const exited = once(browser.process, "exit").then(() => undefined);
-    if (cdp) await cdp.send("Browser.close").catch(() => undefined);
-    await Promise.race([exited, delay(2_000)]);
-    if (browser.process.exitCode === null && browser.process.signalCode === null) {
-      browser.process.kill();
-      await Promise.race([exited, delay(2_000)]);
-    }
-  }
+  await terminateBrowserProcess(browser.process, async () => {
+    if (cdp) await cdp.send("Browser.close");
+    else browser.process.kill();
+  });
   await rm(browser.profileDir, { recursive: true, force: true });
 }
 
@@ -197,9 +193,9 @@ export async function download(options: DownloadOptions): Promise<void> {
     options.headless,
     path.join(outputDir, "profile"),
   );
-  let client: CDP.Client | null = null;
+  let client: CdpClient | null = null;
   try {
-    const cdp = await CDP({ target: endpoint, local: true });
+    const cdp = await CdpClient.connect(endpoint);
     client = cdp;
     const initialTargets = await cdp.send("Target.getTargets");
     const preexistingTargetIds = new Set(
@@ -320,12 +316,12 @@ export async function download(options: DownloadOptions): Promise<void> {
         });
         return;
       }
-      const { requestId } = event.params as
-        | Protocol.Network.LoadingFailedEvent
-        | Protocol.Network.LoadingFinishedEvent;
-      const key = responseKey(event.sessionId, requestId);
-      if (event.method === "Network.loadingFailed") responses.delete(key);
-      else if (event.method === "Network.loadingFinished") {
+      if (event.method === "Network.loadingFailed") {
+        const { requestId } = event.params as Protocol.Network.LoadingFailedEvent;
+        responses.delete(responseKey(event.sessionId, requestId));
+      } else if (event.method === "Network.loadingFinished") {
+        const { requestId } = event.params as Protocol.Network.LoadingFinishedEvent;
+        const key = responseKey(event.sessionId, requestId);
         const info = responses.get(key);
         responses.delete(key);
         if (info) track(save(info));

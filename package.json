@@ -6,6 +6,7 @@
     "cli": "nub src/cli.ts",
     "download": "nub src/cli.ts download",
     "recover": "nub src/cli.ts recover",
+    "smoke:cdp": "nub scripts/smoke-cdp.ts",
     "check": "tsc --noEmit",
     "build:sea": "node scripts/build-sea.mjs",
     "lint": "oxlint .",
@@ -16,13 +17,9 @@
     "release:dry": "release-it --dry-run",
     "prepare": "simple-git-hooks"
   },
-  "dependencies": {
-    "chrome-remote-interface": "^0.34.0"
-  },
   "devDependencies": {
     "@nubjs/types": ">=0.4.13 <=0.6.0",
     "@release-it/conventional-changelog": "^12.0.0",
-    "@types/chrome-remote-interface": "^0.34.0",
     "@types/node": "^26",
     "devtools-protocol": "^0.0.1692173",
     "esbuild": "^0.28.1",
@@ -49,6 +46,9 @@
       "version": "^0.6.0",
       "onFail": "warn"
     }
+  },
+  "engines": {
+    "node": ">=22.4.0"
   },
   "packageManager": "nub@0.6.0"
 }
